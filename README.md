@@ -32,6 +32,26 @@ This is a simple english project made for fun using RAG mechanism to generate an
 
 
 
+
+USED TECHNOLOGIES/TOOLS:
+
+FastAPI - high-performance Python framework to enable connection between server and code.
+
+Python - most of code is written in Python since it's one of the easiest programming languages and very often used in AI/ML field.
+
+LangChain - framework which provides with ready to use wrap-ups for embedding models, vector databases, text splitting etc ( it supports easy integration / configuration ).
+
+ChromaDB - vector database which stores vector embeddings ( numerical representation of text )
+
+Hugging Face - used to import embedding model, generative model necessary classes to initialize them.
+
+Google Flan T5 - sequence to sequence model from sentence transformers library ( encoder-decoder) which is capable of generating ( mainly ) english text.
+
+Multilingual E5 - embedding model, converts text into vectors while reamining their semantic meaning.
+
+
+
+
 NOTES MADE DURING CREATING PROJECT:
 
 EOS - End Of Sequence, special token which means 'end of text'. For T5 model it looks like </s>. Model generates tokens one after another, at some point it chooses EOS token. It signalises to stop, otherwise model wouln't know when to stop and would add text untill reaching max_new_tokens limit. However it is not counted within the lentgh of text. 
@@ -161,6 +181,8 @@ Why use JSON? - server is written in Python, while website in JavaScript. Two di
 Serialization - turning object into JSON text.
 
 Deserialization - turning JSON format into object. 
+
+Pydantic - Python data validation library which processes data with core logic written in Rust.
 
 
 
