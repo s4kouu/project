@@ -1,0 +1,14 @@
+# Virtual environment (every person creates their own)
+venv/
+
+# Python cache (generated automatically when code runs)
+__pycache__/
+*.pyc
+
+# Secrets and local settings (if you ever add API keys)
+.env
+
+# Editor and system files
+.vscode/
+.idea/
+.DS_Store

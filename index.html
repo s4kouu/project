@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test</title>
+<style>
+  :root {
+    --bg: #50324e;
+    --panel: #82489e;
+    --panel-2: #5b225d;
+    --line: #905fa7;
+    --accent: #8a73c1;
+    --accent-soft: #b29fff;
+    --text: #ffffff;
+    --muted: #ffffff;
+    --refuse: #e0b3ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    background: var(--bg); color: var(--text);
+    font: 16px/1.5 "Segoe UI", system-ui, sans-serif;
+  }
+  main {
+    max-width: 1100px; margin: 0 auto; padding: 24px 16px 40px;
+    display: grid; gap: 20px; grid-template-columns: 1fr;
+  }
+  @media (min-width: 900px) { main { grid-template-columns: 380px 1fr; align-items: start; } }
+  h1 { grid-column: 1 / -1; margin: 0; font-size: 1.6rem; font-weight: 650; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  h2 { margin: 0 0 10px; font-size: 1.05rem; font-weight: 600; }
+  textarea, input[type=text] {
+    width: 100%; background: var(--bg); color: var(--text);
+    border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font: inherit;
+  }
+  textarea { min-height: 220px; resize: vertical; }
+  textarea:focus, input:focus, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 2px; }
+  button {
+    background: var(--accent); color: #fff; border: 0; border-radius: 10px;
+    padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: #7c3aed; }
+  button:disabled { opacity: .5; cursor: wait; }
+  .status { margin: 10px 0 0; color: var(--muted); font-size: .9rem; min-height: 1.3em; }
+  #chat { display: flex; flex-direction: column; gap: 12px; min-height: 320px; max-height: 60vh; overflow-y: auto; padding-right: 4px; }
+  .empty { color: var(--muted); margin: auto; text-align: center; }
+  .msg { max-width: 88%; padding: 10px 14px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .user { align-self: flex-end; background: var(--accent); border-bottom-right-radius: 4px; }
+  .bot { align-self: flex-start; background: var(--panel-2); border: 1px solid var(--line); border-bottom-left-radius: 4px; width: 88%; }
+  .bot.refused .answer { color: var(--refuse); }
+  details { margin-top: 8px; font-size: .85rem; color: var(--muted); white-space: normal; }
+  summary { cursor: pointer; color: var(--accent-soft); }
+  details p { margin: 6px 0 0; }
+  ol { margin: 6px 0 0; padding-left: 20px; }
+  .best { color: var(--accent-soft); font-weight: 600; }
+  form { display: flex; gap: 10px; margin-top: 14px; }
+  form input { flex: 1; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Test</h1>
+
+  <section>
+    <h2>Description</h2>
+    <textarea id="description" placeholder="Paste the text the bot should answer questions about."></textarea>
+    <p><button id="setBtn" type="button">Set description</button></p>
+    <p class="status" id="status"></p>
+  </section>
+
+  <section>
+    <h2>Chat</h2>
+    <div id="chat"><p class="empty" id="empty">Set a description, then ask a question about it :D</p></div>
+    <form id="askForm">
+      <input type="text" id="question" placeholder="Ask about the description" autocomplete="off">
+      <button id="askBtn" type="submit">Ask</button>
+    </form>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let ready = false;
+
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined) n.textContent = text;
+  return n;
+}
+
+async function post(url, body) {
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+function addMsg(cls, text) {
+  $("empty")?.remove();
+  const m = el("div", "msg " + cls);
+  m.appendChild(el("div", "answer", text));
+  $("chat").appendChild(m);
+  $("chat").scrollTop = $("chat").scrollHeight;
+  return m;
+}
+
+function addStats(msg, d) {
+  const s = d.stats || {}, a = d.averages || {};
+  const box = el("details");
+  box.open = true;
+  box.appendChild(el("summary", "", "Statistics"));
+
+  if (s.latency !== undefined) {
+    box.appendChild(el("p", "",
+      `Mode: ${d.mode}. Latency ${s.latency.toFixed(2)} s (retrieval ${s.t_retrieval.toFixed(2)}, generation ${s.t_generation.toFixed(2)}, verification ${s.t_verification.toFixed(2)}).`));
+    box.appendChild(el("p", "",
+      `Tokens this question: ${s.input_tokens} in, ${s.output_tokens} out, ${s.total_tokens} total.`));
+    box.appendChild(el("p", "",
+      `Average over ${a.n} question(s): ${a.input_tokens.toFixed(0)} in, ${a.output_tokens.toFixed(1)} out, ${a.total_tokens.toFixed(0)} total, ${a.latency.toFixed(2)} s.`));
+  }
+  const sc = Object.entries(d.scores || {}).map(([k, v]) => `${k.replace(/_/g, " ")} ${v}`).join(", ");
+  if (sc || d.reason) {
+    box.appendChild(el("p", "", `Validation: ${sc || "no scores"}${d.reason ? `. Rejected because: ${d.reason}` : ""}.`));
+  }
+  if (d.sources && d.sources.length) {
+    box.appendChild(el("p", "", "Sources, most reliable first:"));
+    const ol = el("ol");
+    d.sources.forEach((src, i) => {
+      const li = el("li");
+      const label = src.similarity === null ? "entire description" : `similarity ${src.similarity.toFixed(3)}`;
+      li.appendChild(el("span", i === 0 && src.similarity !== null ? "best" : "", label));
+      const flat = src.text.replace(/\s+/g, " ");
+      li.appendChild(document.createTextNode(`: "${flat.length > 110 ? flat.slice(0, 110) + "…" : flat}"`));
+      ol.appendChild(li);
+    });
+    box.appendChild(ol);
+  }
+  msg.appendChild(box);
+}
+
+$("setBtn").addEventListener("click", async () => {
+  const text = $("description").value.trim();
+  if (!text) { $("status").textContent = "Paste a description first."; return; }
+  $("setBtn").disabled = true;
+  $("status").textContent = "Indexing…";
+  try {
+    const d = await post("/description", { description: text });
+    $("status").textContent = d.status;
+    $("chat").replaceChildren(el("p", "empty", "Description set. Ask your first question."));
+    $("chat").lastChild.id = "empty";
+    ready = true;
+  } catch (e) {
+    $("status").textContent = "Could not set the description: " + e.message;
+  } finally {
+    $("setBtn").disabled = false;
+  }
+});
+
+$("askForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const q = $("question").value.trim();
+  if (!q) return;
+  if (!ready) { $("status").textContent = "Set a description before asking."; return; }
+  $("question").value = "";
+  addMsg("user", q);
+  const bot = addMsg("bot", "Thinking…");
+  $("askBtn").disabled = true;
+  try {
+    const d = await post("/ask", { question: q });
+    bot.querySelector(".answer").textContent = d.answer || "I'm not sure, so I'd rather not answer.";
+    if (!d.answer) bot.classList.add("refused");
+    addStats(bot, d);
+  } catch (err) {
+    bot.querySelector(".answer").textContent = "Request failed: " + err.message;
+    bot.classList.add("refused");
+  } finally {
+    $("askBtn").disabled = false;
+    $("chat").scrollTop = $("chat").scrollHeight;
+    $("question").focus();
+  }
+});
+</script>
+</body>
+</html>
