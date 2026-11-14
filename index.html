@@ -40,7 +40,7 @@
     background: var(--accent); color: #fff; border: 0; border-radius: 10px;
     padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer;
   }
-  button:hover:not(:disabled) { background: #7c3aed; }
+  button:hover:not(:disabled) { background: var(--accent-soft); color: #2a1030; }
   button:disabled { opacity: .5; cursor: wait; }
   .status { margin: 10px 0 0; color: var(--muted); font-size: .9rem; min-height: 1.3em; }
   #chat { display: flex; flex-direction: column; gap: 12px; min-height: 320px; max-height: 60vh; overflow-y: auto; padding-right: 4px; }
@@ -56,6 +56,14 @@
   .best { color: var(--accent-soft); font-weight: 600; }
   form { display: flex; gap: 10px; margin-top: 14px; }
   form input { flex: 1; }
+  :root { color-scheme: dark; }
+
+* { scrollbar-width: thin; scrollbar-color: var(--accent) var(--panel-2); }
+
+  ::placeholder { color: rgba(255, 255, 255, .55); }
+  section { box-shadow: 0 6px 24px rgba(0, 0, 0, .25); }
+  button { transition: background .15s, transform .05s; }
+  button:active:not(:disabled) { transform: translateY(1px); }
 </style>
 </head>
 <body>
