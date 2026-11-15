@@ -202,6 +202,6 @@ pip freeze > requirements.txt - writes all necessary libraries along with specif
 
 deactivate - to deactivate venv.
 
-__pycache__ - folder made by Python automatically, consits of compiled version of code saved in .pyc files.  However Python doesn't execute the code directly. It transforms it into bytecode ( simplified intermediate ( pośrednia ) form ).
+pycache - folder made by Python automatically, consits of compiled version of code saved in .pyc files.  However Python doesn't execute the code directly. It transforms it into bytecode ( simplified intermediate ( pośrednia ) form ).
 
 python main.py --debug - terminal version of this program
